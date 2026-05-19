@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Onyx | Core</title>
+    <style>
+        /* ==========================================
+           1. CORE THEME & VARIABLES
+           ========================================== */
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap');
+
+        :root {
+            --bg-dark: #0a0514;
+            --primary-purple: #7b2cbf;
+            --accent-blue: #00f5ff;
+            --text-light: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background: radial-gradient(circle at 50% 0%, #1c0a33 0%, var(--bg-dark) 100%);
+            color: var(--text-light);
+            height: 100vh; width: 100vw; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        /* Ambient Background Glow */
+        .glow-orb {
+            position: absolute; width: 300px; height: 300px; border-radius: 50%;
+            background: var(--accent-blue); filter: blur(100px); opacity: 0.15;
+            animation: drift 10s infinite alternate ease-in-out; pointer-events: none;
+        }
+
+        @keyframes drift {
+            0% { transform: translate(-50px, -50px); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* ==========================================
+           2. VIEW MANAGER
+           ========================================== */
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.5s ease; padding: 20px;
+            z-index: 10;
+        }
+        .screen.active { opacity: 1; pointer-events: all; }
+
+        /* ==========================================
+           3. UI ELEMENTS
+           ========================================== */
+        .glass-panel {
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 24px;
+            padding: 30px 20px; width: 100%; max-width: 380px; text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        h1 { font-size: 2.5rem; font-weight: 900; background: linear-gradient(to right, #fff, var(--accent-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
+        p { color: #aaa; margin-bottom: 20px; font-size: 1rem; }
+
+        .btn {
+            width: 100%; padding: 16px; border-radius: 16px; border: none;
+            font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-google { background: white; color: #333; margin-bottom: 15px; }
+        .btn-google:active { transform: scale(0.96); }
+        
+        .btn-primary { background: linear-gradient(135deg, var(--primary-purple), #5a189a); color: white; box-shadow: 0 4px 15px rgba(123, 44, 191, 0.4); }
+        .btn-primary:active { transform: scale(0.96); box-shadow: 0 2px 5px rgba(123, 44, 191, 0.4); }
+
+        .btn-icon { background: rgba(255,255,255,0.1); width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; border: 1px solid var(--glass-border); color: white; }
+        .btn-icon:active { background: var(--primary-purple); }
+
+        input[type="text"] {
+            width: 100%; padding: 15px; border-radius: 12px; border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.3); color: white; font-size: 1.1rem; outline: none; margin-bottom: 20px; text-align: center;
+        }
+        input[type="text"]:focus { border-color: var(--accent-blue); }
+
+        /* ==========================================
+           4. DASHBOARD & SHARD ENGINE
+           ========================================== */
+        .top-bar {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 20px;
+            display: flex; justify-content: space-between; align-items: center; z-index: 50;
+        }
+        
+        .streak-pill {
+            background: rgba(0, 245, 255, 0.1); border: 1px solid var(--accent-blue);
+            color: var(--accent-blue); padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.9rem;
+            display: flex; align-items: center; gap: 5px; box-shadow: 0 0 10px rgba(0, 245, 255, 0.2);
+        }
+
+        /* 3D Shard Container */
+        .shard-scene {
+            perspective: 1000px; width: 100%; height: 60vh;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .shard {
+            width: 250px; height: 350px;
+            /* Hexagonal Crystal Shape */
+            clip-path: polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%);
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: inset 0 0 50px rgba(123, 44, 191, 0.5), 0 20px 50px rgba(0,0,0,0.8);
+            position: relative; transition: transform 0.1s ease-out; transform-style: preserve-3d;
+            display: flex; justify-content: center; align-items: center; flex-direction: column; overflow: hidden;
+        }
+        
+        .shard::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+            transform: skewX(-20deg); animation: shine 4s infinite; z-index: 2; pointer-events: none;
+        }
+
+        @keyframes shine { 100% { left: 200%; } }
+
+        .shard-image {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; opacity: 0.8; z-index: 1; transition: 0.5s;
+        }
+
+        .shard-title {
+            position: absolute; bottom: 30px; width: 100%; text-align: center;
+            font-size: 1.5rem; font-weight: 900; z-index: 3;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8), 0 0 20px var(--primary-purple);
+        }
+
+        .shard-empty-text { z-index: 3; color: rgba(255,255,255,0.5); font-weight: 500; font-size: 1.1rem; }
+
+        .action-dock {
+            position: absolute; bottom: 40px; width: 100%; display: flex; justify-content: center; gap: 20px;
+        }
+
+        /* Hidden File Input */
+        #camera-input { display: none; }
+
+    </style>
+</head>
+<body>
+
+    <div class="glow-orb"></div>
+
+    <div id="screen-auth" class="screen active">
+        <div class="glass-panel">
+            <h1>ONYX</h1>
+            <p>Forge your legacy in crystal.</p>
+            <button class="btn btn-google" onclick="simulateGoogleLogin()">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="20" alt="G">
+                Continue with Google
+            </button>
+        </div>
+    </div>
+
+    <div id="screen-main" class="screen">
+        <div class="top-bar">
+            <h2 style="font-weight: 900; font-size: 1.2rem; letter-spacing: 2px;">ONYX</h2>
+            <div class="streak-pill">🔥 <span id="streak-count">0</span> Resonance</div>
+        </div>
+
+        <div class="shard-scene">
+            <div class="shard" id="main-shard">
+                <img src="" id="shard-img" class="shard-image" style="display:none;">
+                <div class="shard-empty-text" id="shard-empty">No Active Shard</div>
+                <div class="shard-title" id="shard-title-display"></div>
+            </div>
+        </div>
+
+        <div class="action-dock">
+            <button class="btn-icon" onclick="showScreen('screen-create')" title="Forge Shard">➕</button>
+            <button class="btn-icon" onclick="shareShard()" title="Share Shard">📤</button>
+            <button class="btn-icon" onclick="requestGyro()" title="Calibrate Motion">🧭</button>
+        </div>
+    </div>
+
+    <div id="screen-create" class="screen">
+        <div class="glass-panel" style="background: rgba(10,5,20,0.8);">
+            <h2 style="margin-bottom: 20px;">Forge a Shard</h2>
+            <input type="text" id="shard-name-input" placeholder="Name this achievement..." autocomplete="off">
+            
+            <input type="file" id="camera-input" accept="image/*" capture="environment">
+            <button class="btn btn-google" style="margin-bottom: 20px;" onclick="document.getElementById('camera-input').click()">
+                📸 Capture Reality
+            </button>
+            
+            <p id="capture-status" style="color: var(--accent-blue); font-size: 0.9rem; display:none;">Image Secured.</p>
+
+            <button class="btn btn-primary" onclick="saveShard()">Seal Shard</button>
+            <button class="btn" style="background:transparent; color: #aaa; margin-top:10px;" onclick="showScreen('screen-main')">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. INDEXED-DB ENGINE (The Fix for Image Saving)
+        // ==========================================
+        let db;
+        const request = indexedDB.open("OnyxDatabase", 1);
+
+        request.onupgradeneeded = function(event) {
+            db = event.target.result;
+            // Create a table (object store) for shards
+            if (!db.objectStoreNames.contains("shards")) {
+                db.createObjectStore("shards", { keyPath: "id" });
+            }
+        };
+
+        request.onsuccess = function(event) {
+            db = event.target.result;
+            console.log("Onyx DB Online.");
+        };
+
+        request.onerror = function(event) {
+            console.error("Database error:", event.target.errorCode);
+        };
+
+        // Database Helper Functions
+        function saveToDB(data, callback) {
+            const transaction = db.transaction(["shards"], "readwrite");
+            const store = transaction.objectStore("shards");
+            store.put(data);
+            transaction.oncomplete = () => callback();
+        }
+
+        function loadFromDB(id, callback) {
+            const transaction = db.transaction(["shards"], "readonly");
+            const store = transaction.objectStore("shards");
+            const request = store.get(id);
+            request.onsuccess = () => callback(request.result);
+        }
+
+        // ==========================================
+        // 2. UI & LOGIC STATE
+        // ==========================================
+        let tempImageBase64 = null;
+        let activeShardId = "shard_1"; // Single active shard for now
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function simulateGoogleLogin() {
+            // Mock authentication & Streak calculation
+            let streak = parseInt(localStorage.getItem('onyxStreak')) || 0;
+            let lastLogin = localStorage.getItem('onyxLastLogin');
+            let today = new Date().toDateString();
+
+            if(lastLogin !== today) {
+                streak++;
+                localStorage.setItem('onyxStreak', streak);
+                localStorage.setItem('onyxLastLogin', today);
+            }
+            document.getElementById('streak-count').innerText = streak;
+
+            // Load existing shard on login
+            loadFromDB(activeShardId, (data) => {
+                if(data) updateShardUI(data.title, data.image);
+            });
+
+            showScreen('screen-main');
+        }
+
+        // ==========================================
+        // 3. CAMERA & FILE PROCESSING
+        // ==========================================
+        document.getElementById('camera-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                tempImageBase64 = event.target.result; // This is the massive image data
+                document.getElementById('capture-status').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function saveShard() {
+            const title = document.getElementById('shard-name-input').value.trim();
+            if (!title) return alert("Your shard needs a name.");
+            if (!tempImageBase64) return alert("Capture an image first.");
+
+            const shardData = {
+                id: activeShardId,
+                title: title,
+                image: tempImageBase64,
+                timestamp: new Date().getTime()
+            };
+
+            // Save via IndexedDB to bypass 5MB localStorage crash
+            saveToDB(shardData, () => {
+                updateShardUI(title, tempImageBase64);
+                
+                // Reset form
+                document.getElementById('shard-name-input').value = '';
+                tempImageBase64 = null;
+                document.getElementById('capture-status').style.display = 'none';
+                
+                showScreen('screen-main');
+            });
+        }
+
+        function updateShardUI(title, imageSrc) {
+            document.getElementById('shard-empty').style.display = 'none';
+            document.getElementById('shard-title-display').innerText = title;
+            const imgEl = document.getElementById('shard-img');
+            imgEl.src = imageSrc;
+            imgEl.style.display = 'block';
+        }
+
+        // ==========================================
+        // 4. THE GYROSCOPE PHYSICS ENGINE
+        // ==========================================
+        const shardElement = document.getElementById('main-shard');
+
+        function requestGyro() {
+            // iOS 13+ requires explicit permission for DeviceMotion
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            window.addEventListener('deviceorientation', handleOrientation);
+                            alert("Sensors Synced.");
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                // Non-iOS devices usually don't need permission
+                window.addEventListener('deviceorientation', handleOrientation);
+                alert("Sensors Synced.");
+            }
+        }
+
+        function handleOrientation(event) {
+            // Beta = front/back tilt (-180 to 180)
+            // Gamma = left/right tilt (-90 to 90)
+            let beta = event.beta;
+            let gamma = event.gamma;
+
+            // Clamp values so it doesn't spin out of control
+            if (beta > 89) beta = 89;
+            if (beta < -89) beta = -89;
+            if (gamma > 89) gamma = 89;
+            if (gamma < -89) gamma = -89;
+
+            // Smooth division to make the 3D effect subtle and premium
+            let rotateX = (beta - 45) / 2; // Offset for normal phone holding angle
+            let rotateY = gamma / 2;
+
+            shardElement.style.transform = `rotateX(${-rotateX}deg) rotateY(${rotateY}deg)`;
+        }
+
+        // ==========================================
+        // 5. NATIVE SHARING (Web Share API)
+        // ==========================================
+        async function shareShard() {
+            const title = document.getElementById('shard-title-display').innerText;
+            if(!title) return alert("No active shard to share.");
+
+            const shareData = {
+                title: 'Onyx Achievement',
+                text: `I just forged a new Shard in Onyx: "${title}". My Resonance Streak is ${document.getElementById('streak-count').innerText}🔥`,
+                url: window.location.href
+            };
+
+            try {
+                if (navigator.share) {
+                    await navigator.share(shareData);
+                } else {
+                    alert("Sharing is not supported on this browser.");
+                }
+            } catch (err) {
+                console.log('Share canceled or failed.', err);
+            }
+        }
+    </script>
+</body>
+</html>
